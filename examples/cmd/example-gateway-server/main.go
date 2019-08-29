@@ -8,8 +8,8 @@ import (
 	"context"
 	"flag"
 
+	"github.com/dmarket/grpc-gateway/examples/gateway"
 	"github.com/golang/glog"
-	"github.com/grpc-ecosystem/grpc-gateway/examples/gateway"
 )
 
 var (

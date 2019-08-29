@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/dmarket/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
+	gen "github.com/dmarket/grpc-gateway/protoc-gen-grpc-gateway/generator"
 	"github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-	"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
-	gen "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/generator"
 )
 
 var (
@@ -37,17 +37,16 @@ type generator struct {
 
 // New returns a new generator which generates grpc gateway files.
 func New(reg *descriptor.Registry, useRequestContext bool, registerFuncSuffix, pathTypeString string, allowPatchFeature bool) gen.Generator {
+
 	var imports []descriptor.GoPackage
 	for _, pkgpath := range []string{
 		"context",
 		"io",
 		"net/http",
-		"github.com/grpc-ecosystem/grpc-gateway/runtime",
-		"github.com/grpc-ecosystem/grpc-gateway/utilities",
+		"github.com/dmarket/grpc-gateway/runtime",
+		"github.com/dmarket/grpc-gateway/utilities",
 		"github.com/golang/protobuf/proto",
-		"google.golang.org/grpc",
 		"google.golang.org/grpc/codes",
-		"google.golang.org/grpc/grpclog",
 		"google.golang.org/grpc/status",
 	} {
 		pkg := descriptor.GoPackage{
@@ -122,6 +121,7 @@ func (g *generator) Generate(targets []*descriptor.File) ([]*plugin.CodeGenerato
 
 func (g *generator) generate(file *descriptor.File) (string, error) {
 	pkgSeen := make(map[string]bool)
+
 	var imports []descriptor.GoPackage
 	for _, pkg := range g.baseImports {
 		pkgSeen[pkg.Path] = true

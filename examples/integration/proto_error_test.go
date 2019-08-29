@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dmarket/grpc-gateway/runtime"
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 )

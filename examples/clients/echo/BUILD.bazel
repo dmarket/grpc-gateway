@@ -12,6 +12,6 @@ go_library(
         "examplepb_embedded.go",
         "examplepb_simple_message.go",
     ],
-    importpath = "github.com/grpc-ecosystem/grpc-gateway/examples/clients/echo",
+    importpath = "github.com/dmarket/grpc-gateway/examples/clients/echo",
     deps = ["@in_gopkg_resty_v1//:go_default_library"],
 )

@@ -6,10 +6,10 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/dmarket/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
+	"github.com/dmarket/grpc-gateway/utilities"
 	"github.com/golang/glog"
 	generator2 "github.com/golang/protobuf/protoc-gen-go/generator"
-	"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
-	"github.com/grpc-ecosystem/grpc-gateway/utilities"
 )
 
 type param struct {
@@ -210,6 +210,10 @@ import (
 	{{range $i := .Imports}}{{if not $i.Standard}}{{$i | printf "%s\n"}}{{end}}{{end}}
 )
 
+type validatable interface {
+	Validate() error
+}
+
 var _ codes.Code
 var _ io.Reader
 var _ status.Status
@@ -231,7 +235,7 @@ var _ = utilities.NewDoubleArray
 {{if .Method.GetServerStreaming}}
 func request_{{.Method.Service.GetName}}_{{.Method.GetName}}_{{.Index}}(ctx context.Context, marshaler runtime.Marshaler, client {{.Method.Service.GetName}}Client, req *http.Request, pathParams map[string]string) ({{.Method.Service.GetName}}_{{.Method.GetName}}Client, runtime.ServerMetadata, error)
 {{else}}
-func request_{{.Method.Service.GetName}}_{{.Method.GetName}}_{{.Index}}(ctx context.Context, marshaler runtime.Marshaler, client {{.Method.Service.GetName}}Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error)
+func request_{{.Method.Service.GetName}}_{{.Method.GetName}}_{{.Index}}(ctx context.Context, marshaler runtime.Marshaler, handler {{.Method.Service.GetName}}Handler, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error)
 {{end}}`, "\n", "", -1)))
 
 	_ = template.Must(handlerTemplate.New("client-streaming-request-func").Parse(`
@@ -290,7 +294,8 @@ var (
 )
 {{end}}
 {{template "request-func-signature" .}} {
-	var protoReq {{.Method.RequestType.GoType .Method.Service.File.GoPkg.Path}}
+	var protoReq = &{{.Method.RequestType.GoType .Method.Service.File.GoPkg.Path}}{}
+	var protoResp = &{{.Method.ResponseType.GoType .Method.Service.File.GoPkg.Path}}{}
 	var metadata runtime.ServerMetadata
 {{if .Body}}
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -357,7 +362,7 @@ var (
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_{{.Method.Service.GetName}}_{{.Method.GetName}}_{{.Index}}); err != nil {
+	if err := runtime.PopulateQueryParameters(protoReq, req.Form, filter_{{.Method.Service.GetName}}_{{.Method.GetName}}_{{.Index}}); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 {{end}}
@@ -373,8 +378,17 @@ var (
 	metadata.HeaderMD = header
 	return stream, metadata, nil
 {{else}}
-	msg, err := client.{{.Method.GetName}}(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
+	// grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD)
+	
+	if v, ok := interface{}(protoReq).(validatable); ok {
+		if err := v.Validate(); err != nil {
+			return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+		}
+	}
+
+	errh := handler.{{.Method.GetName}}(ctx, protoReq, protoResp)
+	
+	return protoResp, metadata, errh
 {{end}}
 }`))
 
@@ -435,43 +449,8 @@ var (
 	trailerTemplate = template.Must(template.New("trailer").Parse(`
 {{$UseRequestContext := .UseRequestContext}}
 {{range $svc := .Services}}
-// Register{{$svc.GetName}}{{$.RegisterFuncSuffix}}FromEndpoint is same as Register{{$svc.GetName}}{{$.RegisterFuncSuffix}} but
-// automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func Register{{$svc.GetName}}{{$.RegisterFuncSuffix}}FromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.Dial(endpoint, opts...)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err != nil {
-			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
-			}
-			return
-		}
-		go func() {
-			<-ctx.Done()
-			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
-			}
-		}()
-	}()
 
-	return Register{{$svc.GetName}}{{$.RegisterFuncSuffix}}(ctx, mux, conn)
-}
-
-// Register{{$svc.GetName}}{{$.RegisterFuncSuffix}} registers the http handlers for service {{$svc.GetName}} to "mux".
-// The handlers forward requests to the grpc endpoint over "conn".
-func Register{{$svc.GetName}}{{$.RegisterFuncSuffix}}(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return Register{{$svc.GetName}}{{$.RegisterFuncSuffix}}Client(ctx, mux, New{{$svc.GetName}}Client(conn))
-}
-
-// Register{{$svc.GetName}}{{$.RegisterFuncSuffix}}Client registers the http handlers for service {{$svc.GetName}}
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "{{$svc.GetName}}Client".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "{{$svc.GetName}}Client"
-// doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "{{$svc.GetName}}Client" to call the correct interceptors.
-func Register{{$svc.GetName}}{{$.RegisterFuncSuffix}}Client(ctx context.Context, mux *runtime.ServeMux, client {{$svc.GetName}}Client) error {
+func Register{{$svc.GetName}}Web{{$.RegisterFuncSuffix}}(ctx context.Context, mux *runtime.ServeMux, handler {{$svc.GetName}}Handler) error {
 	{{range $m := $svc.Methods}}
 	{{range $b := $m.Bindings}}
 	mux.Handle({{$b.HTTPMethod | printf "%q"}}, pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -487,7 +466,7 @@ func Register{{$svc.GetName}}{{$.RegisterFuncSuffix}}Client(ctx context.Context,
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}(rctx, inboundMarshaler, handler, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)

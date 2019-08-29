@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dmarket/grpc-gateway/examples/proto/examplepb"
+	"github.com/dmarket/grpc-gateway/runtime"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/duration"
@@ -14,8 +16,6 @@ import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/grpc-ecosystem/grpc-gateway/examples/proto/examplepb"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 )
 
 func TestJSONPbMarshal(t *testing.T) {
@@ -43,10 +43,10 @@ func TestJSONPbMarshal(t *testing.T) {
 			"b": examplepb.NumericEnum_ZERO,
 		},
 		RepeatedEnumAnnotation:   []examplepb.NumericEnum{},
-		EnumValueAnnotation: examplepb.NumericEnum_ONE,
+		EnumValueAnnotation:      examplepb.NumericEnum_ONE,
 		RepeatedStringAnnotation: []string{},
 		RepeatedNestedAnnotation: []*examplepb.ABitOfEverything_Nested{},
-		NestedAnnotation: &examplepb.ABitOfEverything_Nested{},
+		NestedAnnotation:         &examplepb.ABitOfEverything_Nested{},
 	}
 
 	for i, spec := range []struct {
@@ -264,10 +264,10 @@ func TestJSONPbEncoder(t *testing.T) {
 			"b": examplepb.NumericEnum_ZERO,
 		},
 		RepeatedEnumAnnotation:   []examplepb.NumericEnum{},
-		EnumValueAnnotation: examplepb.NumericEnum_ONE,
+		EnumValueAnnotation:      examplepb.NumericEnum_ONE,
 		RepeatedStringAnnotation: []string{},
 		RepeatedNestedAnnotation: []*examplepb.ABitOfEverything_Nested{},
-		NestedAnnotation: &examplepb.ABitOfEverything_Nested{},
+		NestedAnnotation:         &examplepb.ABitOfEverything_Nested{},
 	}
 
 	for i, spec := range []struct {
@@ -359,7 +359,7 @@ func TestJSONPbEncoderFields(t *testing.T) {
 		if err := enc.Encode(fixt.data); err != nil {
 			t.Errorf("enc.Encode(%#v) failed with %v; want success", fixt.data, err)
 		}
-		if got, want := buf.String(), fixt.json + string(m.Delimiter()); got != want {
+		if got, want := buf.String(), fixt.json+string(m.Delimiter()); got != want {
 			t.Errorf("enc.Encode(%#v) = %q; want %q", fixt.data, got, want)
 		}
 	}

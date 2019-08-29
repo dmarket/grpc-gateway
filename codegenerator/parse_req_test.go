@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dmarket/grpc-gateway/codegenerator"
 	"github.com/golang/protobuf/proto"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-	"github.com/grpc-ecosystem/grpc-gateway/codegenerator"
 )
 
 var parseReqTests = []struct {

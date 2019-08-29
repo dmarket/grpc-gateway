@@ -13,11 +13,11 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/dmarket/grpc-gateway/runtime"
+	"github.com/dmarket/grpc-gateway/utilities"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/grpc-ecosystem/grpc-gateway/utilities"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"

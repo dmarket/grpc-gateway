@@ -8,16 +8,16 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/dmarket/grpc-gateway/internal"
+	"github.com/dmarket/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
+	gen "github.com/dmarket/grpc-gateway/protoc-gen-grpc-gateway/generator"
+	swagger_options "github.com/dmarket/grpc-gateway/protoc-gen-swagger/options"
 	"github.com/golang/glog"
 	pbdescriptor "github.com/golang/protobuf/descriptor"
 	"github.com/golang/protobuf/proto"
 	protocdescriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/golang/protobuf/ptypes/any"
-	"github.com/grpc-ecosystem/grpc-gateway/internal"
-	"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
-	gen "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/generator"
-	swagger_options "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options"
 )
 
 var (
