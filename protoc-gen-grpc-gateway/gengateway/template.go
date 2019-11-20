@@ -454,8 +454,10 @@ func Register{{$svc.GetName}}Web{{$.RegisterFuncSuffix}}(ctx context.Context, mu
 	{{range $m := $svc.Methods}}
 	{{range $b := $m.Bindings}}
 	mux.Handle({{$b.HTTPMethod | printf "%q"}}, pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx := context.WithValue(req.Context(), "requestMethod", "{{$b.HTTPMethod}}")
+		ctx = context.WithValue(ctx, "urlPathTemplate", pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}.String())	
 	{{- if $UseRequestContext }}
-		ctx, cancel := context.WithCancel(req.Context())
+		ctx, cancel := context.WithCancel(ctx)
 	{{- else -}}
 		ctx, cancel := context.WithCancel(ctx)
 	{{- end }}
