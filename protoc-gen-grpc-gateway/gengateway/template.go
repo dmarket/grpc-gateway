@@ -206,6 +206,8 @@ It translates gRPC into RESTful JSON APIs.
 package {{.GoPkg.Name}}
 import (
 	"time"
+
+	"github.com/suntechsoft/dmarket-go-tools/rest/filter/metrics"
 	{{range $i := .Imports}}{{if $i.Standard}}{{$i | printf "%s\n"}}{{end}}{{end}}
 
 	{{range $i := .Imports}}{{if not $i.Standard}}{{$i | printf "%s\n"}}{{end}}{{end}}
@@ -220,14 +222,6 @@ var _ io.Reader
 var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
-
-func addDataToContext(ctx context.Context, method, urlTemplate string, start time.Time) context.Context {
-	ctx = context.WithValue(ctx, "executionStartedAt", start)
-	ctx = context.WithValue(ctx, "requestMethod", method)
-	ctx = context.WithValue(ctx, "urlPathTemplate", urlTemplate)
-	return ctx
-}
-
 `))
 
 	handlerTemplate = template.Must(template.New("handler").Parse(`
@@ -463,7 +457,15 @@ func Register{{$svc.GetName}}Web{{$.RegisterFuncSuffix}}(ctx context.Context, mu
 	{{range $m := $svc.Methods}}
 	{{range $b := $m.Bindings}}
 	mux.Handle({{$b.HTTPMethod | printf "%q"}}, pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx := addDataToContext(req.Context(), "{{$b.HTTPMethod}}", pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}.String(), time.Now())
+		ctx := context.WithValue(
+			req.Context(),
+			"requestData",
+			metrics.RequestData{
+				Url: pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}.String(),
+				Method: "{{$b.HTTPMethod}}",
+				StartedAt: time.Now(),
+			},
+		)
 	{{- if $UseRequestContext }}
 		ctx, cancel := context.WithCancel(ctx)
 	{{- else -}}
