@@ -459,7 +459,7 @@ func Register{{$svc.GetName}}Web{{$.RegisterFuncSuffix}}(ctx context.Context, mu
 	mux.Handle({{$b.HTTPMethod | printf "%q"}}, pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx := context.WithValue(
 			req.Context(),
-			"requestData",
+			metrics.RequestData{},
 			metrics.RequestData{
 				Url: pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}.String(),
 				Method: "{{$b.HTTPMethod}}",
