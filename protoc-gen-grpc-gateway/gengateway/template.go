@@ -207,7 +207,7 @@ package {{.GoPkg.Name}}
 import (
 	"time"
 
-	"github.com/suntechsoft/dmarket-go-tools/rest/filter/metrics"
+	"github.com/dmarket/grpc-gateway/pkg/metric/prometheus"
 	{{range $i := .Imports}}{{if $i.Standard}}{{$i | printf "%s\n"}}{{end}}{{end}}
 
 	{{range $i := .Imports}}{{if not $i.Standard}}{{$i | printf "%s\n"}}{{end}}{{end}}
@@ -457,13 +457,12 @@ func Register{{$svc.GetName}}Web{{$.RegisterFuncSuffix}}(ctx context.Context, mu
 	{{range $m := $svc.Methods}}
 	{{range $b := $m.Bindings}}
 	mux.Handle({{$b.HTTPMethod | printf "%q"}}, pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx := context.WithValue(
+		ctx := prometheus.NewContext(
 			req.Context(),
-			metrics.RequestData{},
-			metrics.RequestData{
-				Url: pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}.String(),
+			prometheus.Data{
+				Path: pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}.String(),
 				Method: "{{$b.HTTPMethod}}",
-				StartedAt: time.Now(),
+				StartAt: time.Now(),
 			},
 		)
 	{{- if $UseRequestContext }}
