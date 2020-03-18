@@ -205,9 +205,6 @@ It translates gRPC into RESTful JSON APIs.
 */
 package {{.GoPkg.Name}}
 import (
-	"fmt"
-
-	"github.com/dmarket/grpc-gateway/pkg/metric/prometheus"
 	{{range $i := .Imports}}{{if $i.Standard}}{{$i | printf "%s\n"}}{{end}}{{end}}
 
 	{{range $i := .Imports}}{{if not $i.Standard}}{{$i | printf "%s\n"}}{{end}}{{end}}
@@ -222,6 +219,8 @@ var _ io.Reader
 var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
+
+const headerPathKey = "Path-Pattern"
 `))
 
 	handlerTemplate = template.Must(template.New("handler").Parse(`
@@ -457,13 +456,7 @@ func Register{{$svc.GetName}}Web{{$.RegisterFuncSuffix}}(ctx context.Context, mu
 	{{range $m := $svc.Methods}}
 	{{range $b := $m.Bindings}}
 	mux.Handle({{$b.HTTPMethod | printf "%q"}}, pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		req.Header.Set("path-p", pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}.String())
-		prometheus.NewHTTPRequestContext(
-			req,
-			prometheus.Data{
-				Path: pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}.String(),
-			},
-		)
+		req.Header.Set(headerPathKey, pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}.String())
 	{{- if $UseRequestContext }}
 		ctx, cancel := context.WithCancel(ctx)
 	{{- else -}}
