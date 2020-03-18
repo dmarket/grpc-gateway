@@ -28,7 +28,9 @@ var ErrUnknownURI = status.Error(codes.Unimplemented, http.StatusText(http.Statu
 // It matches http requests to patterns and invokes the corresponding handler.
 type ServeMux struct {
 	// handlers maps HTTP method to a list of handlers.
-	handlers                  map[string][]handler
+	handlers map[string][]handler
+	// handlersMiddleware applies for any incoming request.
+	handlersMiddleware        HandlerFunc
 	forwardResponseOptions    []func(context.Context, http.ResponseWriter, proto.Message) error
 	marshalers                marshalerRegistry
 	incomingHeaderMatcher     HeaderMatcherFunc
@@ -143,6 +145,26 @@ func WithLastMatchWins() ServeMuxOption {
 	}
 }
 
+// WithMiddleware allows to specify HandlerFunc which will be applied
+// for any incoming request. Each option call will append existing
+// middleware after incoming.
+func WithMiddleware(middleware ...HandlerFunc) ServeMuxOption {
+	return func(serveMux *ServeMux) {
+		serveMux.handlersMiddleware = joinHandlers(joinHandlers(middleware...), serveMux.handlersMiddleware)
+	}
+}
+
+func joinHandlers(handlers ...HandlerFunc) HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		for _, h := range handlers {
+			if h == nil {
+				continue
+			}
+			h(w, r, pathParams)
+		}
+	}
+}
+
 // NewServeMux returns a new ServeMux whose internal mapping is empty.
 func NewServeMux(opts ...ServeMuxOption) *ServeMux {
 	serveMux := &ServeMux{
@@ -183,6 +205,7 @@ func NewServeMux(opts ...ServeMuxOption) *ServeMux {
 
 // Handle associates "h" to the pair of HTTP method and path pattern.
 func (s *ServeMux) Handle(meth string, pat Pattern, h HandlerFunc) {
+	h = joinHandlers(s.handlersMiddleware, h)
 	if s.lastMatchWins {
 		s.handlers[meth] = append([]handler{handler{pat: pat, h: h}}, s.handlers[meth]...)
 	} else {
