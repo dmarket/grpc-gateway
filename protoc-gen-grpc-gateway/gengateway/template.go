@@ -205,7 +205,7 @@ It translates gRPC into RESTful JSON APIs.
 */
 package {{.GoPkg.Name}}
 import (
-	"time"
+	"fmt"
 
 	"github.com/dmarket/grpc-gateway/pkg/metric/prometheus"
 	{{range $i := .Imports}}{{if $i.Standard}}{{$i | printf "%s\n"}}{{end}}{{end}}
@@ -457,14 +457,13 @@ func Register{{$svc.GetName}}Web{{$.RegisterFuncSuffix}}(ctx context.Context, mu
 	{{range $m := $svc.Methods}}
 	{{range $b := $m.Bindings}}
 	mux.Handle({{$b.HTTPMethod | printf "%q"}}, pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx := prometheus.NewContext(
-			req.Context(),
+		req.Header.Set("path-p", pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}.String())
+		prometheus.NewHTTPRequestContext(prometheus.NewContext(
+			req,
 			prometheus.Data{
 				Path: pattern_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}.String(),
-				Method: "{{$b.HTTPMethod}}",
-				StartAt: time.Now(),
 			},
-		)
+		))
 	{{- if $UseRequestContext }}
 		ctx, cancel := context.WithCancel(ctx)
 	{{- else -}}
