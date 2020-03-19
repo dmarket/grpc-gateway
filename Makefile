@@ -217,3 +217,6 @@ realclean: distclean
 	rm -f $(OPENAPIV2_GO)
 
 .PHONY: generate examples test lint clean distclean realclean
+
+build-local:
+	go build -o $(GOPATH)/bin/protoc-gen-grpc-gateway protoc-gen-grpc-gateway/main.go
